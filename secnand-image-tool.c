@@ -47,7 +47,7 @@ struct nand_oobfree {
 struct nand_ecclayout {
 	uint32_t eccbytes;
 	uint32_t eccpos[NAND_MAX_OOB_SIZE];
-    uint32_t oobavail;
+	uint32_t oobavail;
 	struct nand_oobfree oobfree[1];
 };
 
@@ -86,11 +86,11 @@ static struct nand_ecclayout nand_oob_bl1 = {
 };
 
 static struct nand_ecclayout nand_oob_64 = {
-	.eccbytes = 24,
+	.eccbytes = 20,
 	.eccpos = {
 		 40,  41,  42,  43,  44,  45,  46,  47,
 		 48,  49,  50,  51,  52,  53,  54,  55,
-		 56,  57,  58,  59,  60,  61,  62,  63},
+		 60,  61,  62,  63},
 	.oobfree = {
  		{.offset = 2,
 		.length = 38} }
@@ -355,7 +355,7 @@ int main(int argc, char *argv[])
 		};
 		int option_index = 0;
 		int c = getopt_long(argc, argv, "b:e:o:p:",
-		                long_options, &option_index);
+		                    long_options, &option_index);
 		if (c == -1)
 			break;
  
@@ -581,7 +581,7 @@ int main(int argc, char *argv[])
 
 	/* BL2/data */
 	if (eccbits == 1) {
-		ecctotal = 4 * eccsteps;
+		ecctotal = 4 * (eccsteps + 1);
 	}
 	else if (eccbits > 1) {
 		bch = init_bch(gf_order(BCH_POLY), eccbits, BCH_POLY);
@@ -654,6 +654,12 @@ int main(int argc, char *argv[])
 				fprintf(stderr, "Error writing: %s\n", strerror(errno));
 				goto error;
 			}
+		}
+
+		/* SECC */
+		if (eccbits == 1) {
+			encode_1bit(eccdata, 4 * eccsteps, ecc);
+			memcpy(eccdata + (4 * eccsteps), ecc, 4);
 		}
 
 		memset(oobdata, 0xFF, oobsize);
